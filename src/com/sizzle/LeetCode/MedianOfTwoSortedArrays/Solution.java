@@ -20,4 +20,10 @@ package com.sizzle.LeetCode.MedianOfTwoSortedArrays;
      中位数是 (2 + 3)/2 = 2.5
  */
 public class Solution {
+    public double findMedianSortedArrays(int[] nums1, int[] nums2) {
+        //中位数：将数字序列按大小进行排序，如果序列长度为奇数，中位数就是中间的数字，
+
+        return 0d;
+    }
+
 }
