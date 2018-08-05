@@ -1,6 +1,4 @@
-package com.sizzle.LeetCode.MedianOfTwoSortedArrays;
-
-import java.lang.reflect.Array;
+package com.sizzle.leetCode.MedianOfTwoSortedArrays;
 
 /**
  * Created by sizzle_carl on 2018/5/20.

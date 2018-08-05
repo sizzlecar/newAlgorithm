@@ -1,4 +1,4 @@
-package com.sizzle.LeetCode.AddTwoNums;
+package com.sizzle.leetCode.addTwoNums;
 
 /**
  * Created by sizzle_carl on 2018/4/16.

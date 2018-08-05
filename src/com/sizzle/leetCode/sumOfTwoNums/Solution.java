@@ -1,4 +1,4 @@
-package com.sizzle.LeetCode.SumOfTwoNums;
+package com.sizzle.leetCode.sumOfTwoNums;
 
 /**
  * Created by sizzle_carl on 2018/4/16.
