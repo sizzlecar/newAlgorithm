@@ -1,6 +1,6 @@
 package com.sizzle.leetCode.nQueensPuzzle;
 
-import java.util.List;
+import java.util.*;
 
 /**
  * Created by sizzle_carl on 2018/8/5.
@@ -33,11 +33,98 @@ import java.util.List;
 
 
 public class Solution {
-
+    /**
+     * 以棋盘左下角作为坐标轴原点，分为n*2个格子，每个格子以左下角坐标作为当前格子的坐标
+     * 先假设某一个格子被皇后占领，根据该点坐标和斜率（横，竖，斜）pass这三条线经过的格子，在剩下的格子中重复上一步步骤
+     * @param n
+     * @return
+     */
     public List<List<String>> solveNQueens(int n) {
-        return null;
+        //保存皇后位置
+        List<List<String>> resultList = new ArrayList<>();
 
+        List<String> chessCoordinateSet = new ArrayList<>();
+        for (int i = 0; i < n;i++){
+            for (int y = 0;y < n; y++){
+                chessCoordinateSet.add(i + "," + y);
+            }
+        }
+
+        //假设0,0被一个皇后占领
+        for (int i = 0; i < n;i++){
+
+            for (int y = 0;y < n; y++){
+                Set<String> solutionSet = new HashSet<>();
+                Boolean flag = findQueenLocation(i,y,solutionSet,new ArrayList<>(chessCoordinateSet),n);
+                if(flag == null){
+                    continue;
+                }
+                if(flag){
+                    List<String> list = new ArrayList<>();
+                    list.addAll(solutionSet);
+                    resultList.add(list);
+                }
+            }
+        }
+
+
+
+        return null;
     }
+
+    //pass当前坐标横，竖，斜三条直线上的点
+    public Boolean findQueenLocation(int x, int y, Set<String> solutionSet,List<String> chessCoordinateSet,int n){
+        if(x >= 8){
+            System.out.println('a');
+        }
+
+        //pass横线上的点
+        for (int i = 0;i < n; i++){
+            chessCoordinateSet.remove(i + "," + y);
+        }
+
+        //pass竖线上的点
+        for (int i = 0;i < n; i++){
+            chessCoordinateSet.remove(x + "," + i);
+        }
+
+        //pass斜线上的点
+        for (int i = 0;i < n; i++){
+            //点斜式 y = x + b - a
+            //假设i = x
+            chessCoordinateSet.remove(i + "," + (i + y - x));
+        }
+
+        if(chessCoordinateSet.size() < n - solutionSet.size()){
+            return false;
+        }
+
+        if(solutionSet.size() == n){
+            return true;
+        }
+        if(x < 8 && y < 8){
+            solutionSet.add(x + "," + y);
+        }else {
+            chessCoordinateSet.remove(x + "," + y);
+        }
+
+        for (String str : chessCoordinateSet){
+            String[] location = str.split(",");
+            int otherX = Integer.parseInt(location[0]);
+            int otherY = Integer.parseInt(location[1]);
+            Boolean flag = findQueenLocation(otherX,otherY,solutionSet,chessCoordinateSet,n);
+            return flag;
+        }
+
+        return null;
+    }
+
+    public static void main(String[] args) {
+        Solution solution = new Solution();
+        solution.solveNQueens(5);
+    }
+
+
 
 
 }
