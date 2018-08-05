@@ -74,9 +74,7 @@ public class Solution {
 
     //pass当前坐标横，竖，斜三条直线上的点
     public Boolean findQueenLocation(int x, int y, Set<String> solutionSet,List<String> chessCoordinateSet,int n){
-        if(x >= 8){
-            System.out.println('a');
-        }
+
 
         //pass横线上的点
         for (int i = 0;i < n; i++){
@@ -88,11 +86,18 @@ public class Solution {
             chessCoordinateSet.remove(x + "," + i);
         }
 
-        //pass斜线上的点
+        //pass斜线上的点(斜率为1)
         for (int i = 0;i < n; i++){
             //点斜式 y = x + b - a
             //假设i = x
             chessCoordinateSet.remove(i + "," + (i + y - x));
+        }
+
+        //pass斜线上的点(斜率为-1)
+        for (int i = 0;i < n; i++){
+            //点斜式 y = -x + b + a
+            //假设i = x
+            chessCoordinateSet.remove(i + "," + (-i + y + x));
         }
 
         if(chessCoordinateSet.size() < n - solutionSet.size()){
@@ -107,13 +112,17 @@ public class Solution {
         }else {
             chessCoordinateSet.remove(x + "," + y);
         }
-
-        for (String str : chessCoordinateSet){
+        Iterator<String> iterable = chessCoordinateSet.iterator();
+        while (iterable.hasNext()){
+            String str = iterable.next();
             String[] location = str.split(",");
             int otherX = Integer.parseInt(location[0]);
             int otherY = Integer.parseInt(location[1]);
-            Boolean flag = findQueenLocation(otherX,otherY,solutionSet,chessCoordinateSet,n);
-            return flag;
+            Boolean flag = findQueenLocation(otherX,otherY,solutionSet,new ArrayList<>(chessCoordinateSet),n);
+
+            if(flag != null && flag){
+                return flag;
+            }
         }
 
         return null;
@@ -121,7 +130,7 @@ public class Solution {
 
     public static void main(String[] args) {
         Solution solution = new Solution();
-        solution.solveNQueens(5);
+        solution.solveNQueens(4);
     }
 
 
