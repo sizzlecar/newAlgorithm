@@ -24,7 +24,11 @@ public class Solution {
      * @return
      */
     public String longestPalindrome(String s) {
-
+        //转为字节数组处理
+        byte[] strBytes = s.getBytes();
+        for (byte num : strBytes){
+            System.out.println("测试提交");
+        }
 
         return null;
     }
