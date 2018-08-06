@@ -131,6 +131,7 @@ public class Solution {
     public static void main(String[] args) {
         Solution solution = new Solution();
         solution.solveNQueens(4);
+        System.out.println("测试提交");
     }
 
 
