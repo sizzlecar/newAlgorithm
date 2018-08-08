@@ -54,51 +54,41 @@ public class Solution {
         for (int i = 0; i < n;i++){
 
             for (int y = 0;y < n; y++){
-                Set<String> solutionSet = new HashSet<>();
-                Boolean flag = findQueenLocation(i,y,solutionSet,new ArrayList<>(chessCoordinateSet),n);
+                LinkedList<String> solutionSet = new LinkedList<>();
+                Boolean flag = findQueenLocation(i,y,solutionSet,new ArrayList<>(chessCoordinateSet),n,0);
                 if(flag == null){
                     continue;
                 }
                 if(flag){
                     List<String> list = new ArrayList<>();
+
                     list.addAll(solutionSet);
                     resultList.add(list);
                 }
             }
         }
+        //拼接结果
+        for (int i = n - 1;i >= 0 ; i--){
+            List<String> list = resultList.get(i);
+            for (String str : list){
+                String[] xy = str.split(",");
+                Integer x = Integer.parseInt(xy[0]);
+                Integer y = Integer.parseInt(xy[1]);
+                /*if(y.intValue() == ){
 
+                }*/
+            }
+        }
 
 
         return null;
     }
 
     //pass当前坐标横，竖，斜三条直线上的点
-    public Boolean findQueenLocation(int x, int y, Set<String> solutionSet,List<String> chessCoordinateSet,int n){
+    public Boolean findQueenLocation(int x, int y, LinkedList<String> solutionSet,List<String> chessCoordinateSet,int n,int frequency){
 
+        removePoint(chessCoordinateSet,n,x,y);
 
-        //pass横线上的点
-        for (int i = 0;i < n; i++){
-            chessCoordinateSet.remove(i + "," + y);
-        }
-
-        //pass竖线上的点
-        for (int i = 0;i < n; i++){
-            chessCoordinateSet.remove(x + "," + i);
-        }
-
-        //pass斜线上的点(斜率为1)
-        for (int i = 0;i < n; i++){
-            //点斜式 y = x + b - a
-            //假设i = x
-            chessCoordinateSet.remove(i + "," + (i + y - x));
-        }
-
-        //pass斜线上的点(斜率为-1)
-        for (int i = 0;i < n; i++){
-            //点斜式 y = -x + b + a
-            //假设i = x
-            chessCoordinateSet.remove(i + "," + (-i + y + x));
-        }
 
         if(chessCoordinateSet.size() < n - solutionSet.size()){
             return false;
@@ -107,20 +97,24 @@ public class Solution {
         if(solutionSet.size() == n){
             return true;
         }
-        if(x < 8 && y < 8){
-            solutionSet.add(x + "," + y);
-        }else {
-            chessCoordinateSet.remove(x + "," + y);
-        }
+
+        //递归调用缓存问题，导致会出现错误的解法，这里需要再对加入的点判断是否在同一条竖，横，斜线上。
+        solutionSet.add(x + "," + y);
+        frequency++;
         Iterator<String> iterable = chessCoordinateSet.iterator();
         while (iterable.hasNext()){
             String str = iterable.next();
             String[] location = str.split(",");
             int otherX = Integer.parseInt(location[0]);
             int otherY = Integer.parseInt(location[1]);
-            Boolean flag = findQueenLocation(otherX,otherY,solutionSet,new ArrayList<>(chessCoordinateSet),n);
-
+            int i = 0;
+            Boolean flag = findQueenLocation(otherX,otherY,solutionSet,new ArrayList<>(chessCoordinateSet),n,i);
             if(flag != null && flag){
+                //去除递归失败的坐标点
+                for (int removeIndex = 0;removeIndex < i; removeIndex++){
+                    solutionSet.removeLast();
+                }
+
                 return flag;
             }
         }
@@ -128,10 +122,50 @@ public class Solution {
         return null;
     }
 
+
+
+
+    public void removePoint(Collection<String> points, int n,int x,int y){
+        //pass横线上的点
+        for (int i = 0;i < n; i++){
+            points.remove(i + "," + y);
+        }
+
+        //pass竖线上的点
+        for (int i = 0;i < n; i++){
+            points.remove(x + "," + i);
+        }
+
+        //pass斜线上的点(斜率为1)
+        for (int i = 0;i < n; i++){
+            //点斜式 y = x + b - a
+            //假设i = x
+            points.remove(i + "," + (i + y - x));
+        }
+
+        //pass斜线上的点(斜率为-1)
+        for (int i = 0;i < n; i++){
+            //点斜式 y = -x + b + a
+            //假设i = x
+            points.remove(i + "," + (-i + y + x));
+        }
+
+    }
+
     public static void main(String[] args) {
         Solution solution = new Solution();
         solution.solveNQueens(4);
         System.out.println("测试提交");
+        List<String> list = new LinkedList<>();
+        list.add("1");
+        list.add("2");
+        list.add("3");
+        list.add("4");
+        list.add("5");
+        for (int i = 0; i < 2; i++){
+            ((LinkedList)list).removeLast();
+        }
+        System.out.println(list);
     }
 
 

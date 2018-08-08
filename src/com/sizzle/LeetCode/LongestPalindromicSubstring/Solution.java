@@ -1,4 +1,4 @@
-package com.sizzle.LeetCode.LongestPalindromicSubstring;
+package com.sizzle.leetCode.longestPalindromicSubstring;
 
 /**
  * Created by test on 2018/6/23.
