@@ -1,4 +1,4 @@
-package com.sizzle.leetCode.MedianOfTwoSortedArrays;
+package com.sizzle.leetCode.medianOfTwoSortedArrays;
 
 /**
  * Created by sizzle_carl on 2018/5/20.
