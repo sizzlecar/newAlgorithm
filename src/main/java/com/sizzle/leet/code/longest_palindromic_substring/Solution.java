@@ -1,4 +1,4 @@
-package com.sizzle.leetCode.longestPalindromicSubstring;
+package com.sizzle.leet.code.longest_palindromic_substring;
 
 /**
  * Created by test on 2018/6/23.

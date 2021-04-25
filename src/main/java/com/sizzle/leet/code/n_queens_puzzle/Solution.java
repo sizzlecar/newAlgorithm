@@ -1,4 +1,4 @@
-package com.sizzle.leetCode.nQueensPuzzle;
+package com.sizzle.leet.code.n_queens_puzzle;
 
 import java.util.*;
 

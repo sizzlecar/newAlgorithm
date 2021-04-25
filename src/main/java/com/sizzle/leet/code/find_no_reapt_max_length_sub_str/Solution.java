@@ -1,4 +1,4 @@
-package com.sizzle.leetCode.findNoReaptMaxLengthSubStr;
+package com.sizzle.leet.code.find_no_reapt_max_length_sub_str;
 
 /**
  * Created by sizzle_carl on 2018/4/15.
