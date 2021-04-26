@@ -66,14 +66,65 @@ public class Solution {
         return maxLength;
     }
 
+
+    /**
+     * 1. 从大到小切分该字符串
+     * 2. 遍历字串判断是否有重复元素
+     * 3. 没有就return
+     */
+    public int lengthOfLongestSubstring2(String s,
+                                         int schedulingFlag,
+                                         String lastSubStr,
+                                         String lastSubStr2) {
+        System.out.println("root str: " + s);
+        String subStr = s.substring(0, s.length() - 1);
+        System.out.println("去尾str: " + subStr);
+        if(subStr.equals("a123cc")){
+            System.out.println("break");
+        }
+        boolean repeatFlag = false;
+        for (int j = 0; j < subStr.length() ; j++){
+            int indexOf = subStr.indexOf(subStr.charAt(j), j + 1);
+            if(indexOf != -1){
+                repeatFlag = true;
+                break;
+            }
+        }
+        if(!repeatFlag){
+            System.out.println(subStr);
+            return subStr.length();
+        }
+
+        String subStr2 = s.substring(1);
+        System.out.println("去头str: " + subStr2);
+        boolean repeatFlag2 = false;
+        for (int j = 0; j < subStr2.length() ; j++){
+            int indexOf = subStr2.indexOf(subStr2.charAt(j), j + 1);
+            if(indexOf != -1){
+                repeatFlag2 = true;
+                break;
+            }
+        }
+
+        if(!repeatFlag2){
+            System.out.println(subStr2);
+            return subStr2.length();
+        }
+
+        if(schedulingFlag == 0){
+            return lengthOfLongestSubstring2(lastSubStr == null ? subStr : lastSubStr, 1, subStr, subStr2);
+        }else {
+            return lengthOfLongestSubstring2(lastSubStr2 == null ? subStr2 : lastSubStr2, 0, subStr, subStr2);
+        }
+
+    }
+
+
     public static void main(String[] args) {
         Solution solution = new Solution();
 
-        String str = "nakjzewjudthlenlflontbumdimcopxbrhmrlkahqwqdafphrfumgrakzmmpclttshmgsnpilgxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
-        Long start = System.currentTimeMillis();
-        int maxLength = solution.lengthOfLongestSubstring(str);
-        Long end = System.currentTimeMillis();
-        System.out.println((end - start));
+        String str = "aaa123ccc";
+        int maxLength = solution.lengthOfLongestSubstring2(str, 0, null, null);
         System.out.println(maxLength);
     }
 }
