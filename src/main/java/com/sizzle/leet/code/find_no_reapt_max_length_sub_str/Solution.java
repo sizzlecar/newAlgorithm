@@ -1,5 +1,7 @@
 package com.sizzle.leet.code.find_no_reapt_max_length_sub_str;
 
+import java.util.*;
+
 /**
  * Created by sizzle_carl on 2018/4/15.
  *
@@ -120,11 +122,103 @@ public class Solution {
     }
 
 
+    public int lengthOfLongestSubstring3(String s, List<byte[]> lastBrotherByteArrays, int[] lastResArray, int lastIndex){
+
+        if(lastResArray != null){
+            int res = Arrays.stream(lastResArray).max().orElse(-1);
+            if(res > -1){
+                return res;
+            }
+        }
+
+        System.out.println("root str: " + s);
+        byte[] strBytes = s.getBytes();
+        //左指针
+        int left = 0;
+        //右指针
+        int right = strBytes.length;
+        List<byte[]> brotherByteArrays = new ArrayList<>();
+        //判断自身是否是一个无重复的字符串
+        System.out.println("subBytes str: " + s);
+        //判断字串是否有重复的元素
+        boolean arrayRepeat = verifyArrayRepeat(s.getBytes());
+        if(!arrayRepeat){
+            System.out.println("subBytes找到无重复字串" + s);
+            return s.length();
+        }
+
+        //去掉第一个元素
+        byte[] subBytes2 = Arrays.copyOfRange(strBytes, left + 1, right);
+        System.out.println("subBytes2 str: " + new String(subBytes2));
+        //判断字串是否有重复的元素
+        boolean arrayRepeat2 = verifyArrayRepeat(subBytes2);
+        if(!arrayRepeat2){
+            System.out.println("subBytes2找到无重复字串" + new String(subBytes2));
+            return subBytes2.length;
+        }
+
+        //去掉最后一个元素
+        byte[] subBytes3 = Arrays.copyOfRange(strBytes, left, right - 1);
+        System.out.println("subBytes3 str: " + new String(subBytes3));
+        //判断字串是否有重复的元素
+        boolean arrayRepeat3 = verifyArrayRepeat(subBytes3);
+        if(!arrayRepeat3){
+            System.out.println("subBytes3找到无重复字串" + new String(subBytes3));
+            return subBytes3.length;
+        }
+
+        if(new String(subBytes2).equals("baab!")){
+            System.out.println("1");
+        }
+
+        //保存当前根节点的两个最大子字符串节点
+        brotherByteArrays.add(subBytes2);
+        brotherByteArrays.add(subBytes3);
+        int[] finalRes = null;
+        if(lastBrotherByteArrays == null || lastBrotherByteArrays.size() == 0 || lastIndex >= lastBrotherByteArrays.size()){
+            //当前是根节点
+            Integer index = 0;
+            int[] resArray = new int[]{-1, -1};
+            int length = lengthOfLongestSubstring3(new String(brotherByteArrays.get(index)), brotherByteArrays, resArray, index + 1);
+            resArray[index] = length;
+            finalRes = resArray;
+        }else {
+            //当前不是根节点，继续遍历上一层没有遍历到的节点
+            int length = lengthOfLongestSubstring3(new String(lastBrotherByteArrays.get(lastIndex)), lastBrotherByteArrays, lastResArray, lastIndex + 1);
+            lastResArray[lastIndex] = length;
+            finalRes = lastResArray;
+        }
+
+        return Arrays.stream(finalRes).max().orElse(-1);
+    }
+
+    /**
+     * 使用hash表判断数组中是否存在重复的数据
+     */
+    private boolean verifyArrayRepeat(byte[] array){
+        assert array != null;
+        Map<Byte, Byte> byteMap = new HashMap<>();
+        for (byte b : array) {
+            if (byteMap.containsKey(b)) {
+                return true;
+            }
+            byteMap.put(b, null);
+        }
+        return false;
+    }
+
+
+
     public static void main(String[] args) {
         Solution solution = new Solution();
 
-        String str = "aaa123ccc";
-        int maxLength = solution.lengthOfLongestSubstring2(str, 0, null, null);
+        String str = "aabaab!bb";
+        Long s1 = System.currentTimeMillis();
+        int maxLength = solution.lengthOfLongestSubstring3(str, null, null, 0);
+        Long e1 = System.currentTimeMillis();
+        System.out.println("执行时间：" + (e1 - s1) + "ms");
         System.out.println(maxLength);
     }
+
+
 }
