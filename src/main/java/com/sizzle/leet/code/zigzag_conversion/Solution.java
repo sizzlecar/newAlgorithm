@@ -53,20 +53,16 @@ public class Solution {
         for(int i = 0; i < s.length(); i++){
             int x, y;
             Coordinate coordinate = coordinateMap.get(i - 1);
-            y = flag ? coordinate.getY() - 1 : i;
+            y = flag ? coordinate.getY() - 1 : (coordinate == null ? i : coordinate.getY() + 1);
             x = flag ? coordinate.getX() + 1 : (coordinate == null ? i : coordinate.getX());
             coordinateMap.put(i, new Coordinate(x,y));
-            flag = i != 0 && i % (numRows - 1) == 0;
+            if(i != 0 && numRows > 1 && i % (numRows - 1) == 0) flag = !flag;
         }
         //按y,x 排序
-        List<Coordinate> sortedList = coordinateMap.values()
+        //按顺序拼接字符
+        return coordinateMap.values()
                 .stream()
                 .sorted(Comparator.comparing(Coordinate::getY).thenComparing(Coordinate::getX))
-                .collect(Collectors.toList());
-
-        //按顺序拼接字符
-        String str = sortedList
-                .stream()
                 .map(coo -> {
                     AtomicReference<Integer> index = new AtomicReference<>();
                     coordinateMap.forEach((key, value) -> {
@@ -79,7 +75,6 @@ public class Solution {
                     return Character.toString(c);
                 })
                 .collect(Collectors.joining(""));
-        return str;
     }
 
     public static class Coordinate{
@@ -115,8 +110,11 @@ public class Solution {
 
     public static void main(String[] args) {
         Solution solution = new Solution();
-        String paypalishiring = solution.convert("PAYPALISHIRING", 3);
+        Long start = System.currentTimeMillis();
+        String paypalishiring = solution.convert("AB", 1);
+        Long end = System.currentTimeMillis();
         System.out.println(paypalishiring);
+        System.out.println("花费时间：" + (end - start) + "ms");
 
     }
 
