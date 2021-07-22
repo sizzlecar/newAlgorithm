@@ -34,6 +34,23 @@ public class Solution {
 
 
     public int reverse(int x) {
-        return 0;
+
+        String numStr = x + "";
+        boolean flag = numStr.startsWith("-");
+        if(flag){
+            numStr = numStr.replace("-", "");
+        }
+        StringBuilder sb = new StringBuilder(flag ? "-" : "");
+        for (int i = numStr.length() - 1; i >= 0; i--) {
+            sb.append(numStr.charAt(i));
+        }
+        return Integer.parseInt(sb.toString());
+    }
+
+    public static void main(String[] args) {
+        int x = 1534236469;
+        Solution solution = new Solution();
+        int reverse = solution.reverse(x);
+        System.out.println(reverse);
     }
 }
