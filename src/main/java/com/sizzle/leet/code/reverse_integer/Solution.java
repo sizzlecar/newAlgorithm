@@ -34,48 +34,24 @@ public class Solution {
 
 
     public int reverse(int x) {
-        String numStr = String.valueOf(x);
-        boolean flag = numStr.startsWith("-");
-        if (flag) {
-            numStr = numStr.replace("-", "");
-        }
-        StringBuilder sb = new StringBuilder(flag ? "-" : "");
-        for (int i = numStr.length() - 1; i >= 0; i--) {
-            sb.append(numStr.charAt(i));
-        }
-        String s = sb.toString();
         int result = 0;
-        boolean negative = false;
-        int i = 0, len = s.length();
-        int limit = -Integer.MAX_VALUE;
-        int multmin;
-        int digit;
-        char firstChar = s.charAt(0);
-        if (firstChar < '0') { // Possible leading "+" or "-"
-            if (firstChar == '-') {
-                negative = true;
-                limit = Integer.MIN_VALUE;
-            }
-            i++;
-        }
-        multmin = limit / 10;
-        while (i < len) {
-            // Accumulating negatively avoids surprises near MAX_VALUE
-            digit = Character.digit(s.charAt(i++), 10);
-            if (result < multmin) {
-                return 0;
-            }
+        boolean negative = x < 0;
+        if(negative) x = -x;
+        int limit = negative ? Integer.MIN_VALUE : -Integer.MAX_VALUE;
+        int subLimit = limit / 10;
+        while (x != 0){
+            int currentInt = x % 10;
+            if(result < subLimit) return 0;
             result *= 10;
-            if (result < limit + digit) {
-                return 0;
-            }
-            result -= digit;
+            if(result < currentInt + limit) return 0;
+            result -= currentInt;
+            x /= 10;
         }
         return negative ? result : -result;
     }
 
     public static void main(String[] args) {
-        int x = 123;
+        int x = -123;
         Solution solution = new Solution();
         int reverse = solution.reverse(x);
         System.out.println(reverse);
