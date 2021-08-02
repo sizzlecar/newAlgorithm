@@ -1,5 +1,11 @@
 package com.sizzle.leet.code.regular_expression_matching;
 
+import javax.naming.NameNotFoundException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 /**
  * 给你一个字符串 s 和一个字符规律 p，请你来实现一个支持 '.' 和 '*' 的正则表达式匹配。
  *
@@ -46,6 +52,71 @@ package com.sizzle.leet.code.regular_expression_matching;
 public class Solution {
 
     public boolean isMatch(String s, String p) {
+        //根据正则表达式构建图
+        DirectedGraph directedGraph = new DirectedGraph();
+        Node start = new Node();
+        for (int i = 0; i < p.length(); i++) {
+            char c = p.charAt(i);
+            switch (c){
+                case '.' : break;
+                case '*' : break;
+                default: break;
+            }
+        }
+
         return false;
     }
+
+
+
+    /**
+     * 图
+     */
+    public static class DirectedGraph {
+        private Node startNode;
+        private Node endNode;
+
+    }
+
+    /**
+     * 图的节点
+     */
+    public static class Node{
+        //类型 0 正常节点， -1
+        private int type;
+
+        private static int id = 0;
+
+        //key -> 节点的边， val -> 边指向的节点
+        private final Map<String, List<Node>> next = new HashMap<>();
+
+        public Node(){
+            id = id++;
+        }
+
+        /**
+         * 添加下一个节点
+         * @param edge 边
+         * @param node 节点
+         */
+        public void addNext(String edge, Node node){
+            List<Node> nodes = next.get(edge);
+            if(nodes == null){
+                nodes = new ArrayList<>();
+            }
+            nodes.add(node);
+            next.put(edge, nodes);
+        }
+
+        public int getType() {
+            return type;
+        }
+
+        public void setType(int type) {
+            this.type = type;
+        }
+    }
+
+
+
 }
