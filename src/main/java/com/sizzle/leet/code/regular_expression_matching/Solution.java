@@ -1,6 +1,7 @@
 package com.sizzle.leet.code.regular_expression_matching;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 给你一个字符串 s 和一个字符规律 p，请你来实现一个支持 '.' 和 '*' 的正则表达式匹配。
@@ -84,7 +85,6 @@ public class Solution {
             root = new Node();
         }
 
-
         public static DirectedGraph compile(String regex) {
             DirectedGraph directedGraph = new DirectedGraph();
             Node currentNode = directedGraph.getRoot();
@@ -117,6 +117,23 @@ public class Solution {
             return directedGraph;
         }
 
+        public static DirectedGraph nfa2dfa(DirectedGraph nfa){
+            DirectedGraph dfa = new DirectedGraph();
+            Node nfaRoot = nfa.getRoot();
+            //找出由root节点经过CLOSURE符号的边的状态
+            Set<Node> closureNodeSet = new HashSet<>();
+            nfa.find(nfaRoot, CLOSURE, closureNodeSet);
+            System.out.println("dfa0 ->" + closureNodeSet.stream().map(Node::getId).map(Objects::toString).collect(Collectors.joining(",")));
+            Set<String> symbolSet = new HashSet<>();
+            nfa.findSymbol(nfaRoot, symbolSet);
+            int i = 1;
+            for (String symbol : symbolSet){
+                Set<Node> symbolNodeSet = new HashSet<>();
+                nfa.find(nfaRoot, symbol, symbolNodeSet);
+                System.out.println("dfa" + i++ + " ->" + symbolNodeSet.stream().map(Node::getId).map(Objects::toString).collect(Collectors.joining(",")));
+            }
+            return dfa;
+        }
 
         public void addEdge(String edgeVal, Node node) {
             node.addEdge(edgeVal, node);
@@ -179,6 +196,23 @@ public class Solution {
             return null;
         }
 
+
+        private Set<Node> find(Node root, String edgeVal, Set<Node> nodeList) {
+            Set<Edge> edges = root.getEdges();
+            nodeList.add(root);
+            for (Edge edge : edges) {
+                String val = edge.getVal();
+                if(nodeList.contains(edge.getTo())) continue;
+                if(val.equals(edgeVal)) {
+                    nodeList.add(edge.getTo());
+                }else {
+                    continue;
+                }
+                return find(edge.getTo(), edgeVal, nodeList);
+            }
+            return nodeList;
+        }
+
         private Node findLast(Node root, Node node) {
             Set<Edge> edges = root.getEdges();
             for (Edge edge : edges) {
@@ -189,6 +223,17 @@ public class Solution {
                 return findLast(to, node);
             }
             return null;
+        }
+
+        private Set<String> findSymbol(Node root, Set<String> symbolSet) {
+            Set<Edge> edges = root.getEdges();
+            for (Edge edge : edges) {
+                String val = edge.getVal();
+                if(symbolSet.contains(val)) continue;
+                if(!val.equals(CLOSURE)) symbolSet.add(val);
+                return findSymbol(edge.getTo(), symbolSet);
+            }
+            return symbolSet;
         }
 
         public static class Node {
@@ -246,7 +291,6 @@ public class Solution {
             }
         }
 
-
         static class Edge {
             private final Node from;
             private final Node to;
@@ -295,6 +339,7 @@ public class Solution {
     public static void main(String[] args) {
         DirectedGraph directedGraph = DirectedGraph.compile("a.aaas*");
         directedGraph.print();
+        DirectedGraph.nfa2dfa(directedGraph);
 
     }
 
