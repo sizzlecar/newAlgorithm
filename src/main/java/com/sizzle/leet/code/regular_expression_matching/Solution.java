@@ -51,7 +51,7 @@ public class Solution {
 
     public boolean isMatch(String s, String p) {
         //根据正则表达式构建图
-        DirectedGraph directedGraph = new DirectedGraph();
+        Graph graph = new Graph();
         for (int i = 0; i < p.length(); i++) {
             char c = p.charAt(i);
             switch (c) {
@@ -70,113 +70,28 @@ public class Solution {
         return false;
     }
 
-    public static int ID = 0;
-    //无条件边值
-    public static String CLOSURE = "CLOSURE";
+
 
 
     /**
-     * 图
+     * 图，用来描述正则表达式
      */
-    public static class DirectedGraph {
+    public static class Graph {
+        /**
+         * 初始节点
+         */
         private final Node root;
 
-        public DirectedGraph() {
+        //无条件边值
+        public static String CLOSURE = "CLOSURE";
+
+        public Graph() {
             root = new Node();
         }
 
-        public DirectedGraph(Node root) {
+        public Graph(Node root) {
             this.root = root;
         }
-
-        /**
-         * 根据正则表达式编译为有限不确定自动机
-         *
-         * @param regex
-         * @return
-         */
-        public static DirectedGraph compile(String regex) {
-            DirectedGraph directedGraph = new DirectedGraph();
-            Node currentNode = directedGraph.getRoot();
-            for (int i = 0; i < regex.length(); i++) {
-                char c = regex.charAt(i);
-                switch (c) {
-                    //任意单个字符
-                    case '.':
-                        Node pointNode = new Node();
-                        directedGraph.addEdge(CLOSURE, currentNode, pointNode);
-                        currentNode = pointNode;
-                        break;
-                    //前面的字符0次或多次
-                    case '*':
-                        Node anyLastNode = directedGraph.getAnyLastNode(currentNode);
-                        if (anyLastNode == null) {
-                            throw new RuntimeException("find last node error");
-                        }
-                        directedGraph.addEdge(CLOSURE, anyLastNode, currentNode);
-                        directedGraph.addEdge(CLOSURE, currentNode, anyLastNode);
-                        break;
-                    //其他字符
-                    default:
-                        Node strNode = new Node();
-                        directedGraph.addEdge(String.valueOf(c), currentNode, strNode);
-                        currentNode = strNode;
-                        break;
-                }
-            }
-            return directedGraph;
-        }
-
-        /**
-         * 根据子集构造法将nfa转化为dfa
-         *
-         * @param nfa
-         * @return
-         */
-        public static DirectedGraph nfa2dfa(DirectedGraph nfa) {
-            Node nfaRoot = nfa.getRoot();
-            Set<String> symbolSet = new HashSet<>();
-            nfa.findSymbol(nfaRoot, symbolSet, null);
-            //NFA初始节点只经过CLOSURE边可以到达的状态结合
-            Set<Node> rootSymbolNodeSet = new HashSet<>();
-            DirectedGraph.find(nfaRoot, CLOSURE, rootSymbolNodeSet);
-            NodeExt nodeExt = new NodeExt(rootSymbolNodeSet.stream().map(Node::getId).collect(Collectors.toSet()));
-            DirectedGraph dfa = new DirectedGraph(nodeExt);
-            nfa2dfa(rootSymbolNodeSet, null, symbolSet, dfa, null);
-            return dfa;
-        }
-
-        public static void nfa2dfa(
-                Set<Node> rootSymbolNodeSet,
-                Set<Node> lastSymbolNodeSet,
-                Set<String> symbolSet,
-                DirectedGraph dfa,
-                Node currentNode) {
-            if(lastSymbolNodeSet != null && rootSymbolNodeSet.equals(lastSymbolNodeSet)) return;
-            for (String symbol : symbolSet) {
-                Set<Node> moveSet = DirectedGraph.findMoveSet(rootSymbolNodeSet, symbol);
-                Set<Node> resultSet = new HashSet<>();
-                moveSet.forEach(moveNode -> {
-                    Set<Node> symbolNodeSet = new HashSet<>();
-                    DirectedGraph.find(moveNode, CLOSURE, symbolNodeSet);
-                    resultSet.addAll(symbolNodeSet);
-                });
-
-                if (resultSet.size() > 0) {
-                    NodeExt node = new NodeExt(resultSet.stream().map(Node::getId).collect(Collectors.toSet()));
-                    if (currentNode == null) currentNode = dfa.getRoot();
-                    if(lastSymbolNodeSet == null) lastSymbolNodeSet = rootSymbolNodeSet;
-                    dfa.addEdge(symbol, currentNode, node);
-                    nfa2dfa(resultSet, rootSymbolNodeSet, symbolSet, dfa, node);
-                }
-            }
-        }
-
-
-        public void addEdge(String edgeVal, Node node) {
-            node.addEdge(edgeVal, node);
-        }
-
 
         /**
          * 给当前的图的指定的节点添加一个边
@@ -189,12 +104,8 @@ public class Solution {
             fromNode.addEdge(edgeVal, toNode);
         }
 
-        public Node getRoot() {
-            return root;
-        }
-
         /**
-         * 找当前节点的上一个节点
+         * 找当前节点的任意上一个节点
          *
          * @param node 需要寻找上一个节点的节点
          * @return 任一上一个节点，没有则返回null
@@ -203,7 +114,6 @@ public class Solution {
             return findLast(root, node);
         }
 
-
         /**
          * 打印当前图
          */
@@ -211,30 +121,13 @@ public class Solution {
             print(root, new HashSet<>());
         }
 
-        private void print(Node node, Set<Edge> cacheEdge) {
-            Set<Edge> edges = node.getEdges();
-            for (Edge edge : edges) {
-                if (cacheEdge.contains(edge)) continue;
-                System.out.println(edge.getId());
-                cacheEdge.add(edge);
-                Node to = edge.getTo();
-                print(to, cacheEdge);
-            }
-        }
-
-        private Node find(Node root, Node node) {
-            Set<Edge> edges = root.getEdges();
-            for (Edge edge : edges) {
-                Node to = edge.getTo();
-                if (to.equals(node)) {
-                    return node;
-                }
-                return find(to, node);
-            }
-            return null;
-        }
-
-
+        /**
+         * 查询从指定状态开始，指定状态经过指定条件可以达到的状态集合
+         * @param root 指定状态(图的节点)
+         * @param edgeVal 边值，条件
+         * @param nodeSet 指定状态集合
+         * @return 从指定状态开始，指定状态经过指定条件可以达到的状态集合,包括自身
+         */
         public static Set<Node> find(Node root, String edgeVal, Set<Node> nodeSet) {
             Set<Edge> edges = root.getEdges();
             nodeSet.add(root);
@@ -251,7 +144,12 @@ public class Solution {
             return nodeSet;
         }
 
-
+        /**
+         * 找出图中指定节点（状态）出发，经过指定值（边的值，条件）可以到达的状态集合
+         * @param statusSet 指定节点（状态）集合
+         * @param edgeVal 指定值（边的值，条件）
+         * @return 从图中指定节点（状态）出发，经过指定值（边的值，条件）可以到达的状态集合
+         */
         public static Set<Node> findMoveSet(Set<Node> statusSet, String edgeVal) {
             //找出 statusSet中有edgeVal边的下一个状态集合
             return statusSet.stream().map(statusNode -> {
@@ -263,19 +161,15 @@ public class Solution {
             }).flatMap(Set::stream).collect(Collectors.toSet());
         }
 
-        private Node findLast(Node root, Node node) {
-            Set<Edge> edges = root.getEdges();
-            for (Edge edge : edges) {
-                Node to = edge.getTo();
-                if (to.equals(node)) {
-                    return edge.getFrom();
-                }
-                return findLast(to, node);
-            }
-            return null;
-        }
 
-        private Set<String> findSymbol(Node root, Set<String> symbolSet, Edge lastEdge) {
+        /**
+         * 查询从指定节点（状态）开始，所有经过的边的出现的字符（边的值，条件）集合，不包括 CLOSURE
+         * @param root 指定节点（状态）
+         * @param symbolSet 边的字符（边的值，条件）集合
+         * @param lastEdge 上一个边，防止环导致的死循环
+         * @return 从指定节点（状态）开始，所有经过的边的出现的字符（边的值，条件）集合，不包括 CLOSURE
+         */
+        public Set<String> findSymbol(Node root, Set<String> symbolSet, Edge lastEdge) {
             Set<Edge> edges = root.getEdges();
             for (Edge edge : edges) {
                 String val = edge.getVal();
@@ -290,16 +184,55 @@ public class Solution {
             return symbolSet;
         }
 
+        public Node getRoot() {
+            return root;
+        }
+
+        private Node findLast(Node root, Node node) {
+            Set<Edge> edges = root.getEdges();
+            for (Edge edge : edges) {
+                Node to = edge.getTo();
+                if (to.equals(node)) {
+                    return edge.getFrom();
+                }
+                return findLast(to, node);
+            }
+            return null;
+        }
+
+
+
+        private void print(Node node, Set<Edge> cacheEdge) {
+            Set<Edge> edges = node.getEdges();
+            for (Edge edge : edges) {
+                if (cacheEdge.contains(edge)) continue;
+                System.out.println(edge.getId());
+                cacheEdge.add(edge);
+                Node to = edge.getTo();
+                print(to, cacheEdge);
+            }
+        }
+
+        /**
+         * 图的节点，由 类型，id, 由该节点出发的边构成
+         */
         public static class Node {
             //类型 0 普通节点, 1 尾节点
             private int type;
 
-            private final int id;
+            public static int ID = 0;
+
+            private final Set<Integer> id = new HashSet<>();
             //key -> 节点的边， val -> 边指向的节点
             private final Set<Edge> edges = new HashSet<>();
 
             public Node() {
-                this.id = Solution.ID++;
+                this.id.add(Node.ID++);
+                type = 0;
+            }
+
+            public Node(Set<Integer> id) {
+                this.id.addAll(id);
                 type = 0;
             }
 
@@ -308,7 +241,7 @@ public class Solution {
                 if (this == o) return true;
                 if (!(o instanceof Node)) return false;
                 Node node = (Node) o;
-                return id == node.id;
+                return Objects.equals(id, node.id);
             }
 
             @Override
@@ -318,7 +251,7 @@ public class Solution {
 
             @Override
             public String toString() {
-                return String.valueOf(id);
+                return id.stream().map(Objects::toString).collect(Collectors.joining(","));
             }
 
             /**
@@ -340,7 +273,7 @@ public class Solution {
                 this.type = type;
             }
 
-            public int getId() {
+            public Set<Integer> getId() {
                 return id;
             }
 
@@ -349,36 +282,10 @@ public class Solution {
             }
         }
 
-        public static class NodeExt extends Node {
-
-
-            private final Set<Integer> combinationId;
-
-            public NodeExt(Set<Integer> combinationId) {
-                this.combinationId = combinationId;
-            }
-
-            @Override
-            public boolean equals(Object o) {
-                if (this == o) return true;
-                if (!(o instanceof NodeExt)) return false;
-                if (!super.equals(o)) return false;
-                NodeExt nodeExt = (NodeExt) o;
-                return combinationId.equals(nodeExt.combinationId);
-            }
-
-            @Override
-            public int hashCode() {
-                return Objects.hash(super.hashCode(), combinationId);
-            }
-
-            @Override
-            public String toString() {
-                return combinationId.stream().map(Objects::toString).collect(Collectors.joining(","));
-            }
-        }
-
-        static class Edge {
+        /**
+         * 图的边，由开始节点，结束节点，边的条件组成
+         */
+        public static class Edge {
             private final Node from;
             private final Node to;
             private final String val;
@@ -423,11 +330,146 @@ public class Solution {
 
     }
 
+
+    /**
+     * 正则类，实际就是一个有限自动机
+     */
+    public static class Regex{
+
+        //有限不确定自动机
+        private final Graph nfa;
+
+        //有限确定自动机
+        private final Graph dfa;
+
+        private Regex(Graph nfa) {
+            this.nfa = nfa;
+            dfa = nfa2dfa(nfa);
+        }
+
+
+        /**
+         * 根据正则表达式编译为有限自动机
+         *
+         * @param regex 正则表达式
+         * @return 根据正则表达式创建的有限自动机
+         */
+        public static Regex compile(String regex) {
+            Graph graph = new Graph();
+            Graph.Node currentNode = graph.getRoot();
+            for (int i = 0; i < regex.length(); i++) {
+                char c = regex.charAt(i);
+                switch (c) {
+                    //任意单个字符
+                    case '.':
+                        Graph.Node pointNode = new Graph.Node();
+                        graph.addEdge(Graph.CLOSURE, currentNode, pointNode);
+                        currentNode = pointNode;
+                        break;
+                    //前面的字符0次或多次
+                    case '*':
+                        Graph.Node anyLastNode = graph.getAnyLastNode(currentNode);
+                        if (anyLastNode == null) {
+                            throw new RuntimeException("find last node error");
+                        }
+                        graph.addEdge(Graph.CLOSURE, anyLastNode, currentNode);
+                        graph.addEdge(Graph.CLOSURE, currentNode, anyLastNode);
+                        break;
+                    //其他字符
+                    default:
+                        Graph.Node strNode = new Graph.Node();
+                        graph.addEdge(String.valueOf(c), currentNode, strNode);
+                        currentNode = strNode;
+                        break;
+                }
+            }
+            currentNode.setType(1);
+            return new Regex(graph);
+        }
+
+        /**
+         * 根据子集构造法将nfa转化为dfa
+         * 思路：
+         * 1. 找出nfa初始节点出发经过CLOSURE边可以到达的所有的节点（状态）的集合，作为dfa的初始节点
+         * 2. 找出nfa所有边的值（条件）的字符集合，不包括CLOSURE
+         * 3. 找出dfa上一个节点对应的nfa的状态集合，找出从该集合节点（状态）出发经过某一条件的到达节点（状态）集合,再找出在nfa中任一上一个集合的状态出发经过CLOSURE边可以到达的所有的节点（状态）的集合，作为dfa的下一个节点
+         * 4. 重复3，直至找不到节点
+         *
+         * @param nfa 有限不确定自动机
+         * @return 与nfa等价你的dfa
+         */
+        public static Graph nfa2dfa(Graph nfa) {
+            Graph.Node nfaRoot = nfa.getRoot();
+            Set<String> symbolSet = new HashSet<>();
+            nfa.findSymbol(nfaRoot, symbolSet, null);
+            //NFA初始节点只经过CLOSURE边可以到达的状态结合
+            Set<Graph.Node> rootSymbolNodeSet = new HashSet<>();
+            Graph.find(nfaRoot, Graph.CLOSURE, rootSymbolNodeSet);
+            Graph.Node nodeExt = new Graph.Node(rootSymbolNodeSet.stream().map(Graph.Node::getId).flatMap(Set::stream).collect(Collectors.toSet()));
+            Graph dfa = new Graph(nodeExt);
+            nfa2dfa(rootSymbolNodeSet, null, symbolSet, dfa, null);
+            return dfa;
+        }
+
+
+        /**
+         * 遍历dfa判断输入的字符串是否被当前自动机接受
+         * @param text 待验证的字符串
+         * @return 是否被自动机接受，true 接受，false 不接受
+         */
+        public boolean isMatch(String text){
+            for (int i = 0; i < text.length(); i++){
+                String str = String.valueOf(text.charAt(i));
+
+            }
+
+
+            return false;
+        }
+
+
+        public Graph getNfa() {
+            return nfa;
+        }
+
+        public Graph getDfa() {
+            return dfa;
+        }
+
+        private static void nfa2dfa(
+                Set<Graph.Node> rootSymbolNodeSet,
+                Set<Graph.Node> lastSymbolNodeSet,
+                Set<String> symbolSet,
+                Graph dfa,
+                Graph.Node currentNode) {
+            if(lastSymbolNodeSet != null && rootSymbolNodeSet.equals(lastSymbolNodeSet)) return;
+            for (String symbol : symbolSet) {
+                Set<Graph.Node> moveSet = Graph.findMoveSet(rootSymbolNodeSet, symbol);
+                Set<Graph.Node> resultSet = new HashSet<>();
+                moveSet.forEach(moveNode -> {
+                    Set<Graph.Node> symbolNodeSet = new HashSet<>();
+                    Graph.find(moveNode, Graph.CLOSURE, symbolNodeSet);
+                    resultSet.addAll(symbolNodeSet);
+                });
+
+                if (resultSet.size() > 0) {
+                    Graph.Node node = new Graph.Node(resultSet.stream().map(Graph.Node::getId).flatMap(Set::stream).collect(Collectors.toSet()));
+                    if (currentNode == null) currentNode = dfa.getRoot();
+                    if(lastSymbolNodeSet == null) lastSymbolNodeSet = rootSymbolNodeSet;
+                    dfa.addEdge(symbol, currentNode, node);
+                    nfa2dfa(resultSet, rootSymbolNodeSet, symbolSet, dfa, node);
+                }
+            }
+            currentNode.setType(1);
+        }
+    }
+
     public static void main(String[] args) {
-        DirectedGraph directedGraph = DirectedGraph.compile("a.aaas*");
-        directedGraph.print();
-        DirectedGraph nfa2dfa = DirectedGraph.nfa2dfa(directedGraph);
-        nfa2dfa.print();
+        Regex regex = Regex.compile("a.b*sda");
+        Graph nfa = regex.getNfa();
+        Graph dfa = regex.getDfa();
+        nfa.print();
+        dfa.print();
 
     }
 
