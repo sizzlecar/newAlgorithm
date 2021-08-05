@@ -84,6 +84,7 @@ public class Solution {
 
         //无条件边值
         public static String CLOSURE = "CLOSURE";
+        public static String DOT = "DOT";
 
         public Graph() {
             root = new Node();
@@ -128,20 +129,26 @@ public class Solution {
          * @param nodeSet 指定状态集合
          * @return 从指定状态开始，指定状态经过指定条件可以达到的状态集合,包括自身
          */
-        public static Set<Node> find(Node root, String edgeVal, Set<Node> nodeSet) {
+        public static Set<Node> find(Node root, String edgeVal, Set<Node> nodeSet, boolean addSelf) {
             Set<Edge> edges = root.getEdges();
-            nodeSet.add(root);
+            if(addSelf){
+                nodeSet.add(root);
+            }
             for (Edge edge : edges) {
                 String val = edge.getVal();
                 if (nodeSet.contains(edge.getTo())) continue;
-                if (val.equals(edgeVal)) {
+                if (val.equals(edgeVal) || val.equals(DOT)) {
                     nodeSet.add(edge.getTo());
                 } else {
                     continue;
                 }
-                find(edge.getTo(), edgeVal, nodeSet);
+                find(edge.getTo(), edgeVal, nodeSet, addSelf);
             }
             return nodeSet;
+        }
+
+        public static Set<Node> find(Node root, String edgeVal, Set<Node> nodeSet) {
+            return find(root, edgeVal, nodeSet, true);
         }
 
         /**
@@ -182,6 +189,24 @@ public class Solution {
                 findSymbol(edge.getTo(), symbolSet, lastEdge);
             }
             return symbolSet;
+        }
+
+
+        /**
+         * 查询指定节点下，是否有指定的节点
+         * @param root 指定节点（状态）
+         * @param findNode 指定的节点（状态）
+         * @return 查询指定节点下，是否有指定的节点
+         */
+        public Node findNode(Node root, Node findNode) {
+            if(root.equals(findNode)) return root;
+            Set<Edge> edges = root.getEdges();
+            for (Edge edge : edges) {
+                if(edge.getFrom().equals(edge.getTo())) continue;
+                Node to = edge.getTo();
+                return findNode(to, findNode);
+            }
+            return null;
         }
 
         public Node getRoot() {
@@ -363,7 +388,7 @@ public class Solution {
                     //任意单个字符
                     case '.':
                         Graph.Node pointNode = new Graph.Node();
-                        graph.addEdge(Graph.CLOSURE, currentNode, pointNode);
+                        graph.addEdge(Graph.DOT, currentNode, pointNode);
                         currentNode = pointNode;
                         break;
                     //前面的字符0次或多次
@@ -418,12 +443,15 @@ public class Solution {
          * @return 是否被自动机接受，true 接受，false 不接受
          */
         public boolean isMatch(String text){
+            Graph.Node node = dfa.getRoot();
             for (int i = 0; i < text.length(); i++){
                 String str = String.valueOf(text.charAt(i));
-
+                Set<Graph.Node> statusSet = new HashSet<>();
+                Graph.find(node, str, statusSet, false);
+                if(statusSet.size() == 0) return false;
+                node = statusSet.stream().findFirst().get();
+                if(i == text.length() - 1 && statusSet.stream().anyMatch(status -> status.getType() == 1)) return true;
             }
-
-
             return false;
         }
 
@@ -453,23 +481,49 @@ public class Solution {
                 });
 
                 if (resultSet.size() > 0) {
-                    Graph.Node node = new Graph.Node(resultSet.stream().map(Graph.Node::getId).flatMap(Set::stream).collect(Collectors.toSet()));
                     if (currentNode == null) currentNode = dfa.getRoot();
-                    if(lastSymbolNodeSet == null) lastSymbolNodeSet = rootSymbolNodeSet;
-                    dfa.addEdge(symbol, currentNode, node);
+                    if (lastSymbolNodeSet == null) lastSymbolNodeSet = rootSymbolNodeSet;
+                    Graph.Node node = new Graph.Node(resultSet.stream().map(Graph.Node::getId).flatMap(Set::stream).collect(Collectors.toSet()));
+                    Graph.Node findNode = dfa.findNode(dfa.getRoot(), node);
+                    if(findNode != null){
+                        dfa.addEdge(symbol, currentNode, findNode);
+                    }else {
+                        dfa.addEdge(symbol, currentNode, node);
+                    }
                     nfa2dfa(resultSet, rootSymbolNodeSet, symbolSet, dfa, node);
                 }
             }
+            if (currentNode == null) currentNode = dfa.getRoot();
             currentNode.setType(1);
         }
     }
 
     public static void main(String[] args) {
-        Regex regex = Regex.compile("a.b*sda");
+        Map<String, List<String>> caseMap = new HashMap<>();
+        caseMap.put("a", Collections.singletonList("aa"));
+        caseMap.put("a*", Collections.singletonList("aa"));
+        caseMap.put(".*", Collections.singletonList("ab"));
+        caseMap.put("c*a*b", Collections.singletonList("aab"));
+        caseMap.put("mis*is*p*.", Collections.singletonList("mississippi"));
+
+        caseMap.forEach((key, value) -> {
+            Regex regex = Regex.compile(key);
+            System.out.println("------------");
+            regex.getNfa().print();
+            System.out.println("------------");
+            regex.getDfa().print();
+            System.out.println("------------");
+            value.forEach(val -> {
+                System.out.println(key + ", " + val + " : " + regex.isMatch(val));
+            });
+            System.out.println("------------");
+        });
+
+   /*     Regex regex = Regex.compile("a.b*sda");
         Graph nfa = regex.getNfa();
         Graph dfa = regex.getDfa();
         nfa.print();
-        dfa.print();
+        dfa.print();*/
 
     }
 
