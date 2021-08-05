@@ -91,6 +91,7 @@ public class Solution {
 
         /**
          * 根据正则表达式编译为有限不确定自动机
+         *
          * @param regex
          * @return
          */
@@ -128,31 +129,31 @@ public class Solution {
 
         /**
          * 根据子集构造法将nfa转化为dfa
+         *
          * @param nfa
          * @return
          */
-        public static DirectedGraph nfa2dfa(DirectedGraph nfa){
+        public static DirectedGraph nfa2dfa(DirectedGraph nfa) {
             Node nfaRoot = nfa.getRoot();
             Set<String> symbolSet = new HashSet<>();
             nfa.findSymbol(nfaRoot, symbolSet, null);
             //NFA初始节点只经过CLOSURE边可以到达的状态结合
             Set<Node> rootSymbolNodeSet = new HashSet<>();
             DirectedGraph.find(nfaRoot, CLOSURE, rootSymbolNodeSet);
-            String combinationId = rootSymbolNodeSet.stream().map(Node::getId).map(Objects::toString).collect(Collectors.joining(","));
-            NodeExt nodeExt = new NodeExt(combinationId);
+            NodeExt nodeExt = new NodeExt(rootSymbolNodeSet.stream().map(Node::getId).collect(Collectors.toSet()));
             DirectedGraph dfa = new DirectedGraph(nodeExt);
-            int i = 1;
-            nfa2dfa(nfaRoot, rootSymbolNodeSet, symbolSet, i, dfa, null);
+            nfa2dfa(rootSymbolNodeSet, null, symbolSet, dfa, null);
             return dfa;
         }
 
-        public static void nfa2dfa(Node nfaRoot,
-                             Set<Node> rootSymbolNodeSet,
-                             Set<String> symbolSet,
-                             int i,
-                             DirectedGraph dfa,
-                             Node currentNode){
-            for (String symbol : symbolSet){
+        public static void nfa2dfa(
+                Set<Node> rootSymbolNodeSet,
+                Set<Node> lastSymbolNodeSet,
+                Set<String> symbolSet,
+                DirectedGraph dfa,
+                Node currentNode) {
+            if(lastSymbolNodeSet != null && rootSymbolNodeSet.equals(lastSymbolNodeSet)) return;
+            for (String symbol : symbolSet) {
                 Set<Node> moveSet = DirectedGraph.findMoveSet(rootSymbolNodeSet, symbol);
                 Set<Node> resultSet = new HashSet<>();
                 moveSet.forEach(moveNode -> {
@@ -161,13 +162,12 @@ public class Solution {
                     resultSet.addAll(symbolNodeSet);
                 });
 
-                if(resultSet.size() > 0){
-                    String combinationIdStr = resultSet.stream().map(Node::getId).map(Objects::toString).collect(Collectors.joining(","));
-                    NodeExt node = new NodeExt(combinationIdStr);
-                    if(currentNode == null) currentNode = dfa.getRoot();
+                if (resultSet.size() > 0) {
+                    NodeExt node = new NodeExt(resultSet.stream().map(Node::getId).collect(Collectors.toSet()));
+                    if (currentNode == null) currentNode = dfa.getRoot();
+                    if(lastSymbolNodeSet == null) lastSymbolNodeSet = rootSymbolNodeSet;
                     dfa.addEdge(symbol, currentNode, node);
-                    System.out.println("dfa" + i++ + " ->" + combinationIdStr);
-                    nfa2dfa(nfaRoot, resultSet, symbolSet, i, dfa, node);
+                    nfa2dfa(resultSet, rootSymbolNodeSet, symbolSet, dfa, node);
                 }
             }
         }
@@ -240,10 +240,10 @@ public class Solution {
             nodeSet.add(root);
             for (Edge edge : edges) {
                 String val = edge.getVal();
-                if(nodeSet.contains(edge.getTo())) continue;
-                if(val.equals(edgeVal)) {
+                if (nodeSet.contains(edge.getTo())) continue;
+                if (val.equals(edgeVal)) {
                     nodeSet.add(edge.getTo());
-                }else {
+                } else {
                     continue;
                 }
                 find(edge.getTo(), edgeVal, nodeSet);
@@ -254,12 +254,12 @@ public class Solution {
 
         public static Set<Node> findMoveSet(Set<Node> statusSet, String edgeVal) {
             //找出 statusSet中有edgeVal边的下一个状态集合
-             return statusSet.stream().map(statusNode -> {
+            return statusSet.stream().map(statusNode -> {
                 Set<Edge> edges = statusNode.getEdges();
-                 return edges.stream()
-                         .filter(edge -> edge.getVal().equals(edgeVal))
-                         .map(Edge::getTo)
-                         .collect(Collectors.toSet());
+                return edges.stream()
+                        .filter(edge -> edge.getVal().equals(edgeVal))
+                        .map(Edge::getTo)
+                        .collect(Collectors.toSet());
             }).flatMap(Set::stream).collect(Collectors.toSet());
         }
 
@@ -279,11 +279,11 @@ public class Solution {
             Set<Edge> edges = root.getEdges();
             for (Edge edge : edges) {
                 String val = edge.getVal();
-                if(lastEdge != null && edge.getFrom().equals(lastEdge.getTo()) && edge.getTo().equals(lastEdge.getFrom())){
-                    if(!val.equals(CLOSURE)) symbolSet.add(val);
+                if (lastEdge != null && edge.getFrom().equals(lastEdge.getTo()) && edge.getTo().equals(lastEdge.getFrom())) {
+                    if (!val.equals(CLOSURE)) symbolSet.add(val);
                     continue;
                 }
-                if(!val.equals(CLOSURE)) symbolSet.add(val);
+                if (!val.equals(CLOSURE)) symbolSet.add(val);
                 lastEdge = edge;
                 findSymbol(edge.getTo(), symbolSet, lastEdge);
             }
@@ -316,6 +316,10 @@ public class Solution {
                 return Objects.hash(id);
             }
 
+            @Override
+            public String toString() {
+                return String.valueOf(id);
+            }
 
             /**
              * 给当前节点添加一个边
@@ -345,12 +349,12 @@ public class Solution {
             }
         }
 
-        public static class NodeExt extends Node{
+        public static class NodeExt extends Node {
 
 
-            private final String combinationId;
+            private final Set<Integer> combinationId;
 
-            public NodeExt(String combinationId) {
+            public NodeExt(Set<Integer> combinationId) {
                 this.combinationId = combinationId;
             }
 
@@ -367,6 +371,11 @@ public class Solution {
             public int hashCode() {
                 return Objects.hash(super.hashCode(), combinationId);
             }
+
+            @Override
+            public String toString() {
+                return combinationId.stream().map(Objects::toString).collect(Collectors.joining(","));
+            }
         }
 
         static class Edge {
@@ -379,7 +388,7 @@ public class Solution {
                 this.from = from;
                 this.to = to;
                 this.val = val;
-                this.id = from.id + "->" + to.id + ":" + val;
+                this.id = from.toString() + "->" + to.toString() + ":" + val;
             }
 
             public Node getFrom() {
@@ -417,7 +426,8 @@ public class Solution {
     public static void main(String[] args) {
         DirectedGraph directedGraph = DirectedGraph.compile("a.aaas*");
         directedGraph.print();
-        DirectedGraph.nfa2dfa(directedGraph);
+        DirectedGraph nfa2dfa = DirectedGraph.nfa2dfa(directedGraph);
+        nfa2dfa.print();
 
     }
 
