@@ -529,6 +529,15 @@ public class Solution {
             return node;
         }
 
+        public Node run(Node currentNode, String val, String strategyVal) {
+            String currentNodeId = currentNode.getId();
+            if(strategyVal.equals(DOT)){
+                return dotTable.get(currentNodeId + ":" + DOT);
+            }else {
+                return table.get(currentNodeId + ":" + val);
+            }
+        }
+
         /**
          * 图的节点，由 类型，id, 由该节点出发的边构成
          */
@@ -676,7 +685,7 @@ public class Solution {
             nfa.findSymbol(nfaRoot, symbolSet, null);
             //NFA初始节点只经过CLOSURE边可以到达的状态结合
             Set<Graph.Node> rootSymbolNodeSet = new HashSet<>();
-            Nfa.find(nfaRoot, Graph.CLOSURE, rootSymbolNodeSet);
+            Nfa.find(nfaRoot, Graph.CLOSURE, rootSymbolNodeSet, true, false);
             Dfa.DfaNode nodeExt = new Dfa.DfaNode(0, rootSymbolNodeSet.stream().map(Graph.Node::getId).sorted().collect(Collectors.joining(",")));
             Dfa dfa = new Dfa(nodeExt);
             nfa2dfa(rootSymbolNodeSet, null, symbolSet, dfa, null);
@@ -714,12 +723,37 @@ public class Solution {
          * @return 是否被自动机接受，true 接受，false 不接受
          */
         public boolean isMatch(String text) {
-            Graph.Node node = dfa.getRoot();
-            for (int i = 0; i < text.length(); i++) {
+            return isMatch(text, -1, null, null);
+        }
+
+        public boolean isMatch(String text, int backIndex, Graph.Node backNode, String edgeVal) {
+            Graph.Node node = backNode == null ? dfa.getRoot() : backNode;
+            int i = backIndex == -1 ? 0 : backIndex;
+            for (; i < text.length(); i++) {
                 char c = text.charAt(i);
                 String str = String.valueOf(c);
-                Graph.Node matchNode = dfa.run(node, str);
-                if (matchNode == null) return false;
+                Set<Graph.Edge> edges = node.getEdges();
+                List<String> edgeVals = edges.stream().map(Graph.Edge::getVal).collect(Collectors.toList());
+                Graph.Node matchNode = dfa.run(node, str, edgeVal == null ? (edgeVals.size() == 0 ? "" :edgeVals.get(0)) : edgeVal);
+                if(edges.size() > 1 && edgeVals.contains(Graph.DOT)){
+                    edgeVal = edgeVals.get(0);
+                    backIndex = i;
+                    backNode = node;
+                }
+                if (matchNode == null){
+                    if(backNode != null){
+                        Set<Graph.Edge> edgesTmp = backNode.getEdges();
+                        List<String> edgeValsTmp = edgesTmp.stream().map(Graph.Edge::getVal).collect(Collectors.toList());
+                        edgeValsTmp.remove(edgeVal);
+                        if(edgeValsTmp.size() > 0){
+                            return isMatch(text, backIndex, backNode, edgeValsTmp.get(0));
+                        }
+                    }else {
+                        return false;
+                    }
+                }else {
+                    edgeVal = null;
+                }
                 node = matchNode;
                 if (i == text.length() - 1 && matchNode.getType() == 1) return true;
             }
@@ -792,8 +826,9 @@ public class Solution {
         caseMap.put(".*c", Collections.singletonList("ab"));
         caseMap.put("a.a", Collections.singletonList("aaa"));
         caseMap.put("a*a", Collections.singletonList("aaa"));
-        caseMap.put("ab*a*c*a", Arrays.asList("aaa", "aaba"));*/
-        caseMap.put(".*..a*", Arrays.asList("a"));
+        caseMap.put("ab*a*c*a", Arrays.asList("aaa", "aaba"));
+        caseMap.put(".*..a*", Arrays.asList("a"));*/
+        caseMap.put("ab.*de", Arrays.asList("abcdede"));
         //caseMap.put(".", Arrays.asList("a"));
         caseMap.forEach((key, value) -> {
             Long start = System.currentTimeMillis();
