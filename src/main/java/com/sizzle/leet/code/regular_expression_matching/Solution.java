@@ -1,6 +1,7 @@
 package com.sizzle.leet.code.regular_expression_matching;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 /**
@@ -48,6 +49,7 @@ import java.util.stream.Collectors;
  * @author carl.che
  */
 public class Solution {
+
 
     public boolean isMatch(String s, String p) {
         return Regex.compile(p).isMatch(s);
@@ -125,7 +127,8 @@ public class Solution {
             for (Edge edge : edges) {
                 if (edge.getFrom().equals(edge.getTo())) continue;
                 Node to = edge.getTo();
-                return findNode(to, findNode);
+                Node node = findNode(to, findNode);
+                if (node != null) return node;
             }
             return null;
         }
@@ -161,8 +164,6 @@ public class Solution {
 
             //key -> 节点的边， val -> 边指向的节点
             protected final Set<Edge> edges = new HashSet<>();
-
-            public static int COUNT = 0;
 
 
             public Node(String id) {
@@ -277,7 +278,7 @@ public class Solution {
         private Node endNode;
 
         public Nfa() {
-            super(new NfaNode());
+            super(new NfaNode("0"));
         }
 
 
@@ -392,12 +393,13 @@ public class Solution {
          */
         public static class NfaNode extends Graph.Node {
 
-            public NfaNode() {
-                super(String.valueOf(Node.COUNT++));
-            }
 
             public NfaNode(int type, String id) {
                 super(type, id);
+            }
+
+            public NfaNode(String id) {
+                super(0, id);
             }
 
 
@@ -456,9 +458,6 @@ public class Solution {
 
         private final Map<String, Graph.Node> dotTable = new HashMap<>();
 
-        public Dfa() {
-            super(new DfaNode());
-        }
 
         public Dfa(Node root) {
             super(root);
@@ -529,12 +528,14 @@ public class Solution {
             return node;
         }
 
-        public Node run(Node currentNode, String val, String strategyVal) {
+        public Node run(Node currentNode, String val, boolean dotFlag) {
             String currentNodeId = currentNode.getId();
-            if(strategyVal.equals(DOT)){
-                return dotTable.get(currentNodeId + ":" + DOT);
-            }else {
-                return table.get(currentNodeId + ":" + val);
+            String dot = currentNodeId + ":" + DOT;
+            String valStr = currentNodeId + ":" + val;
+            if (dotFlag) {
+                return dotTable.get(dot) == null ? table.get(valStr) : dotTable.get(dot);
+            } else {
+                return table.get(valStr) == null ? dotTable.get(dot) : table.get(valStr);
             }
         }
 
@@ -543,12 +544,13 @@ public class Solution {
          */
         public static class DfaNode extends Graph.Node {
 
-            public DfaNode() {
-                super(String.valueOf(Node.COUNT++));
-            }
 
             public DfaNode(int type, String id) {
                 super(type, id);
+            }
+
+            public DfaNode(String id) {
+                super(0, id);
             }
 
             @Override
@@ -577,7 +579,7 @@ public class Solution {
              */
             @Override
             public void addEdge(String edgeVal, Node toNode) {
-                Dfa.DfaEdge edge = new Dfa.DfaEdge(this, toNode, edgeVal);
+                Graph.Edge edge = new Dfa.DfaEdge(this, toNode, edgeVal);
                 edges.add(edge);
             }
 
@@ -605,15 +607,17 @@ public class Solution {
     public static class Regex {
 
         //有限不确定自动机
-        private final Nfa nfa;
+        private Nfa nfa;
 
         //有限确定自动机
-        private final Dfa dfa;
+        private Dfa dfa;
+
+        private final AtomicInteger counter = new AtomicInteger(1);
 
         private Regex(Nfa nfa) {
             this.nfa = nfa;
             dfa = nfa2dfa(nfa);
-            System.out.println("--------------");
+            /*System.out.println("--------------");
             nfa.print();
             System.out.println("--------------");
             dfa.print();
@@ -621,7 +625,25 @@ public class Solution {
             System.out.println(dfa.getTable().toString());
             System.out.println("--------------");
             System.out.println(dfa.getDotTable().toString());
+            System.out.println("--------------");*/
+        }
+
+        private Regex() {
+
+        }
+
+        public void init(Nfa nfa) {
+            this.nfa = nfa;
+            dfa = nfa2dfa(nfa);
+            /*System.out.println("--------------");
+            nfa.print();
             System.out.println("--------------");
+            dfa.print();
+            System.out.println("--------------");
+            System.out.println(dfa.getTable().toString());
+            System.out.println("--------------");
+            System.out.println(dfa.getDotTable().toString());
+            System.out.println("--------------");*/
         }
 
 
@@ -632,6 +654,7 @@ public class Solution {
          * @return 根据正则表达式创建的有限自动机
          */
         public static Regex compile(String regex) {
+            Regex regexInstance = new Regex();
             Nfa nfa = new Nfa();
             Graph.Node currentNode = nfa.getRoot();
             for (int i = 0; i < regex.length(); i++) {
@@ -639,7 +662,7 @@ public class Solution {
                 switch (c) {
                     //任意单个字符
                     case '.':
-                        Nfa.NfaNode pointNode = new Nfa.NfaNode();
+                        Nfa.NfaNode pointNode = new Nfa.NfaNode(String.valueOf(regexInstance.counter.getAndAdd(1)));
                         nfa.addEdge(Graph.DOT, currentNode, pointNode);
                         currentNode = pointNode;
                         break;
@@ -651,13 +674,13 @@ public class Solution {
                         }
                         nfa.addEdge(Graph.CLOSURE, anyLastNode, currentNode);
                         nfa.addEdge(Graph.CLOSURE, currentNode, anyLastNode);
-                        Nfa.NfaNode cloNode = new Nfa.NfaNode();
+                        Nfa.NfaNode cloNode = new Nfa.NfaNode(String.valueOf(regexInstance.counter.getAndAdd(1)));
                         nfa.addEdge(Graph.CLOSURE, currentNode, cloNode);
                         currentNode = cloNode;
                         break;
                     //其他字符
                     default:
-                        Nfa.NfaNode strNode = new Nfa.NfaNode();
+                        Nfa.NfaNode strNode = new Nfa.NfaNode(String.valueOf(regexInstance.counter.getAndAdd(1)));
                         nfa.addEdge(String.valueOf(c), currentNode, strNode);
                         currentNode = strNode;
                         break;
@@ -665,7 +688,8 @@ public class Solution {
             }
             currentNode.setType(1);
             nfa.setEndNode(currentNode);
-            return new Regex(nfa);
+            regexInstance.init(nfa);
+            return regexInstance;
         }
 
         /**
@@ -723,40 +747,55 @@ public class Solution {
          * @return 是否被自动机接受，true 接受，false 不接受
          */
         public boolean isMatch(String text) {
-            return isMatch(text, -1, null, null);
+            return isMatch(text, null, new ArrayList<>());
         }
 
-        public boolean isMatch(String text, int backIndex, Graph.Node backNode, String edgeVal) {
-            Graph.Node node = backNode == null ? dfa.getRoot() : backNode;
-            int i = backIndex == -1 ? 0 : backIndex;
-            for (; i < text.length(); i++) {
-                char c = text.charAt(i);
-                String str = String.valueOf(c);
-                Set<Graph.Edge> edges = node.getEdges();
-                List<String> edgeVals = edges.stream().map(Graph.Edge::getVal).collect(Collectors.toList());
-                Graph.Node matchNode = dfa.run(node, str, edgeVal == null ? (edgeVals.size() == 0 ? "" :edgeVals.get(0)) : edgeVal);
-                if(edges.size() > 1 && edgeVals.contains(Graph.DOT)){
-                    edgeVal = edgeVals.get(0);
-                    backIndex = i;
-                    backNode = node;
-                }
-                if (matchNode == null){
-                    if(backNode != null){
-                        Set<Graph.Edge> edgesTmp = backNode.getEdges();
-                        List<String> edgeValsTmp = edgesTmp.stream().map(Graph.Edge::getVal).collect(Collectors.toList());
-                        edgeValsTmp.remove(edgeVal);
-                        if(edgeValsTmp.size() > 0){
-                            return isMatch(text, backIndex, backNode, edgeValsTmp.get(0));
-                        }
-                    }else {
-                        return false;
-                    }
-                }else {
-                    edgeVal = null;
-                }
-                node = matchNode;
-                if (i == text.length() - 1 && matchNode.getType() == 1) return true;
+        public boolean isMatch(String text, List<Backtrack> backtracks, List<Backtrack> backtracks2) {
+            if (backtracks == null) {
+                backtracks = new ArrayList<>();
+                Backtrack defaultBacktrack = new Backtrack();
+                backtracks.add(defaultBacktrack);
             }
+
+            for (Backtrack backtrack : backtracks) {
+                Graph.Node backNode = backtrack.getBackNode();
+                int backIndex = backtrack.getBackIndex();
+                Boolean dotFlag = backtrack.isDotFlag();
+                Graph.Node node = backNode == null ? dfa.getRoot() : backNode;
+                int i = backIndex == -1 ? 0 : backIndex;
+                dotFlag = dotFlag != null && dotFlag;
+                for (; i < text.length(); i++) {
+                    char c = text.charAt(i);
+                    String str = String.valueOf(c);
+                    Set<Graph.Edge> edges = node.getEdges();
+                    List<String> edgeVals = edges.stream().map(Graph.Edge::getVal).collect(Collectors.toList());
+                    Graph.Node matchNode = dfa.run(node, str, dotFlag);
+                    boolean anyMatch = edgeVals.stream().anyMatch(val -> val.equals(str));
+                    if (edges.size() > 1 && edgeVals.contains(Graph.DOT) && anyMatch) {
+                        Backtrack newBacktrack = new Backtrack();
+                        newBacktrack.setBackNode(node);
+                        newBacktrack.setBackIndex(i);
+                        newBacktrack.setDotFlag(true);
+                        if (!backtracks2.contains(newBacktrack)) backtracks2.add(newBacktrack);
+                    }
+                    if (matchNode == null) {
+                        if (backtracks2.size() > 0) {
+                            backtracks2.remove(backtrack);
+                            List<Backtrack> list = backtracks2.stream()
+                                    .sorted(Comparator.comparing(Backtrack::getBackIndex).reversed())
+                                    .collect(Collectors.toList());
+                            return isMatch(text, list, backtracks2);
+                        } else {
+                            return false;
+                        }
+                    } else {
+                        dotFlag = false;
+                    }
+                    node = matchNode;
+                    if (i == text.length() - 1 && matchNode.getType() == 1) return true;
+                }
+            }
+
             return false;
         }
 
@@ -812,11 +851,58 @@ public class Solution {
                 }
             }
         }
+
+        public static class Backtrack {
+            private int backIndex = -1;
+            private Graph.Node backNode = null;
+            private Boolean dotFlag;
+
+
+            public int getBackIndex() {
+                return backIndex;
+            }
+
+            public void setBackIndex(int backIndex) {
+                this.backIndex = backIndex;
+            }
+
+            public Graph.Node getBackNode() {
+                return backNode;
+            }
+
+            public void setBackNode(Graph.Node backNode) {
+                this.backNode = backNode;
+            }
+
+            public Boolean isDotFlag() {
+                return dotFlag;
+            }
+
+            public void setDotFlag(Boolean dotFlag) {
+                this.dotFlag = dotFlag;
+            }
+
+            @Override
+            public boolean equals(Object o) {
+                if (this == o) return true;
+                if (!(o instanceof Backtrack)) return false;
+                Backtrack backtrack = (Backtrack) o;
+                return backIndex == backtrack.backIndex && backNode.equals(backtrack.backNode);
+            }
+
+            @Override
+            public int hashCode() {
+                return Objects.hash(backIndex, backNode);
+            }
+        }
+
     }
+
 
     public static void main(String[] args) {
         Map<String, List<String>> caseMap = new HashMap<>();
-        /*caseMap.put("a", Collections.singletonList("aa"));
+        caseMap.put("c*b*b*.*ac*.*bc*a*", Arrays.asList("cbaacacaaccbaabcb"));
+        caseMap.put("a", Collections.singletonList("aa"));
         caseMap.put("aa", Collections.singletonList("aa"));
         caseMap.put("a*", Collections.singletonList("aa"));
         caseMap.put(".*", Arrays.asList("aa", "ab"));
@@ -827,9 +913,11 @@ public class Solution {
         caseMap.put("a.a", Collections.singletonList("aaa"));
         caseMap.put("a*a", Collections.singletonList("aaa"));
         caseMap.put("ab*a*c*a", Arrays.asList("aaa", "aaba"));
-        caseMap.put(".*..a*", Arrays.asList("a"));*/
+        caseMap.put(".*..a*", Arrays.asList("a"));
         caseMap.put("ab.*de", Arrays.asList("abcdede"));
-        //caseMap.put(".", Arrays.asList("a"));
+        caseMap.put(".", Arrays.asList("a"));
+        caseMap.put("a*.*b*.*a*aa*a*", Arrays.asList("acaabbaccbbacaabbbb"));
+        caseMap.put("a*.*b.a.*c*b*a*c*", Arrays.asList("abbabaaaaaaacaa"));
         caseMap.forEach((key, value) -> {
             Long start = System.currentTimeMillis();
             Solution solution = new Solution();
