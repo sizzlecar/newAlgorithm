@@ -68,7 +68,8 @@ public class MergeSort {
         int[] tmpArray = new int[ti - hi + 1];
         //依次比较两个子数组中的元素，按顺序方去临时数组中
         while (i <= mi && j <= ti) {
-            if (numArray[i] < numArray[j]) {
+            //<=就存入tmp保证是稳定的排序
+            if (numArray[i] <= numArray[j]) {
                 tmpArray[k++] = numArray[i++];
             } else {
                 tmpArray[k++] = numArray[j++];
