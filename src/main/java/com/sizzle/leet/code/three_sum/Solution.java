@@ -46,7 +46,7 @@ public class Solution {
      *         所以，我们需要做
      *          1.从正数区间找出所有的2个元素的元组，分辨遍历负数区间判断是否等于0
      *          2.从负数区间找出所有的2个元素的元组，分辨遍历正数区间判断是否等于0
-     *       时间复杂度：O(f(n)) = O(2 * n/2 * (n/2-1)) + O(2 * 2/n)
+     *
      * @param nums 原数组
      * @return 原数组中所有和为0且不重复的三元组
      */
@@ -54,7 +54,7 @@ public class Solution {
         //先进行排序
         quickSort(nums);
         //全正数组，全负数组没有解答
-        if (nums[0] > 0 || nums[nums.length - 1] < 0) return Collections.emptyList();
+        if (nums.length == 0 || nums[0] > 0 || nums[nums.length - 1] < 0) return Collections.emptyList();
         //找出正负临界索引
         int criticalIndex = nums.length / 2;
         for (int i = 0; i < nums.length - 1; i++) {
@@ -67,7 +67,7 @@ public class Solution {
         //从正数区间找出所有的2个元素的元组，分辨遍历负数区间判断是否等于0
         for (int i = criticalIndex; i < nums.length; i++) {
             int iVal = nums[i];
-            for (int j = i + 1; j < nums.length - 1; j++) {
+            for (int j = i + 1; j < nums.length; j++) {
                 int jVal = nums[j];
                 int val = -(iVal + jVal);
                 int searchIndex = Arrays.binarySearch(nums, 0, criticalIndex, val);
@@ -80,7 +80,7 @@ public class Solution {
         //从负数区间找出所有的2个元素的元组，分辨遍历正数区间判断是否等于0
         for (int i = 0; i < criticalIndex; i++) {
             int iVal = nums[i];
-            for (int j = i + 1; j < criticalIndex - 1; j++) {
+            for (int j = i + 1; j < criticalIndex; j++) {
                 int jVal = nums[j];
                 int val = -(iVal + jVal);
                 int searchIndex = Arrays.binarySearch(nums, criticalIndex, nums.length, val);
@@ -99,7 +99,7 @@ public class Solution {
             }
         }
         if (zeroCount >= 3) resultList.add(Arrays.asList(0, 0, 0));
-        return resultList;
+        return resultList.stream().distinct().collect(Collectors.toList());
     }
 
     /**
@@ -156,7 +156,7 @@ public class Solution {
 
     public static void main(String[] args) {
         Solution quickSort = new Solution();
-        int num[] = new int[]{-1,0,1,2,-1,-4};
+        int num[] = new int[]{/*-1,0,1,2,-1,-4*/};
         Long start = System.currentTimeMillis();
         List<List<Integer>> lists = quickSort.threeSum(num);
         Long end = System.currentTimeMillis();
